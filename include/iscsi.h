@@ -43,6 +43,7 @@ struct scsi_iovec;
 #define LIBISCSI_FEATURE_NOP_COUNTER (1)
 #define LIBISCSI_FEATURE_ISER (1)
 
+// 最大字符串大小
 #define MAX_STRING_SIZE (255)
 
 /*
@@ -161,6 +162,10 @@ struct iscsi_url {
  * and controls how the initiator will try to negotiate the immediate data.
  *
  * Default is for libiscsi to try to negotiate ISCSI_IMMEDIATE_DATA_YES
+ *
+ *
+ * 设置立即数据所需模式
+ * 控制发起者如何协商即时数据
  */
 enum iscsi_immediate_data {
 	ISCSI_IMMEDIATE_DATA_NO  = 0,

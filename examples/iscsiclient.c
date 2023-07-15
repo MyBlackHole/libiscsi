@@ -32,6 +32,7 @@
  */
 
 /* This is the host/port we connect to.*/
+// 连接目标
 #define TARGET "127.0.0.1:3260"
 
 #if defined(_WIN32)
@@ -54,6 +55,7 @@ WSADATA wsaData;
 #include "scsi-lowlevel.h"
 
 struct client_state {
+    // 完成
        int finished;
        const char *message;
        int has_discovered_target;
@@ -623,7 +625,9 @@ void discoveryconnect_cb(struct iscsi_context *iscsi, int status, void *command_
 
 int main(int argc, char *argv[])
 {
+    // 分配上下文指针对象
 	struct iscsi_context *iscsi;
+    // poll fd 记录结构
 	struct pollfd pfd;
 	struct client_state clnt;
 
@@ -638,12 +642,14 @@ int main(int argc, char *argv[])
 
 	memset(&clnt, 0, sizeof(clnt));
 
+    // 创建初始化一个实例 
 	iscsi = iscsi_create_context("iqn.2002-10.com.ronnie:client");
 	if (iscsi == NULL) {
 		printf("Failed to create context\n");
 		exit(10);
 	}
 
+    // 设置别名
 	if (iscsi_set_alias(iscsi, "ronnie") != 0) {
 		printf("Failed to add alias\n");
 		exit(10);
@@ -657,7 +663,10 @@ int main(int argc, char *argv[])
 	}
 
 	while (clnt.finished == 0) {
+        // 获取 fd(sock)
+        // 设置 poll
 		pfd.fd = iscsi_get_fd(iscsi);
+        // 设置预期事件
 		pfd.events = iscsi_which_events(iscsi);
 
 		if (poll(&pfd, 1, -1) < 0) {

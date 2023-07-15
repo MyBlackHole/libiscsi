@@ -70,10 +70,13 @@ void iscsi_free_iscsi_in_pdu(struct iscsi_context *iscsi, struct iscsi_in_pdu *i
 #define MAX_CHAP_C_LENGTH 2048
 
 struct iscsi_context {
+    // 传输操作
 	struct iscsi_transport *drv;
 	void *opaque;
+    // 传输 类型
 	enum iscsi_transport_type transport;
 
+    // 发起人名
 	char initiator_name[MAX_STRING_SIZE+1];
 	char target_name[MAX_STRING_SIZE+1];
 	char target_address[MAX_STRING_SIZE+1];  /* If a redirect */
@@ -82,11 +85,16 @@ struct iscsi_context {
 	char alias[MAX_STRING_SIZE+1];
 	char bind_interfaces[MAX_STRING_SIZE+1];
 
+    // 用户名
 	char user[MAX_STRING_SIZE+1];
+    // 密码
 	char passwd[MAX_STRING_SIZE+1];
+    // 加密方式
 	char chap_c[MAX_CHAP_C_LENGTH+1];
 
+    // 目标登陆用户名
 	char target_user[MAX_STRING_SIZE+1];
+    // 目标登陆密码
 	char target_passwd[MAX_STRING_SIZE+1];
 	uint32_t target_chap_i;
 	unsigned char target_chap_r[CHAP_R_SIZE];
@@ -94,19 +102,23 @@ struct iscsi_context {
 	char error_string[MAX_STRING_SIZE+1];
 
 	enum iscsi_session_type session_type;
+    // 随机 id
 	unsigned char isid[6];
 	uint8_t rdma_ack_timeout;
 	uint32_t itt;
 	uint32_t cmdsn;
 	uint32_t min_cmdsn_waiting;
 	uint32_t expcmdsn;
+    // 最大命令数
 	uint32_t maxcmdsn;
 	uint32_t statsn;
 	enum iscsi_header_digest want_header_digest;
+    // 头部摘要大小
 	enum iscsi_header_digest header_digest;
 
 	int fd;
 	int is_connected;
+    // 是否堵塞中
 	int is_corked;
 
 	int tcp_user_timeout;
@@ -114,6 +126,7 @@ struct iscsi_context {
 	int tcp_keepintvl;
 	int tcp_keepidle;
 	int tcp_syncnt;
+    // sock 非阻塞设置状态
 	int tcp_nonblocking;
 
 	int current_phase;
@@ -130,10 +143,13 @@ struct iscsi_context {
 	int chap_a;
 	int chap_i;
 
+    // socket 状态修改回调
 	iscsi_command_cb socket_status_cb;
+    // 私有数据
 	void *connect_data;
 
 	struct iscsi_pdu *outqueue;
+    // 当前输出队列
 	struct iscsi_pdu *outqueue_current;
 	struct iscsi_pdu *waitpdu;
 
@@ -141,7 +157,9 @@ struct iscsi_context {
 
 	uint32_t max_burst_length;
 	uint32_t first_burst_length;
+    // 发起者最大接收数据段长度
 	uint32_t initiator_max_recv_data_segment_length;
+    // 目标最大接收数据段长度
 	uint32_t target_max_recv_data_segment_length;
 	enum iscsi_initial_r2t want_initial_r2t;
 	enum iscsi_initial_r2t use_initial_r2t;
@@ -149,9 +167,12 @@ struct iscsi_context {
 	enum iscsi_immediate_data use_immediate_data;
 
 	int lun;
+    // 没有开启自动重新连接
 	int no_auto_reconnect;
+    // 延迟重连
 	int reconnect_deferred;
 	int reconnect_max_retries;
+    // 等待重新连接
 	int pending_reconnect;
 
 	int log_level;
@@ -166,8 +187,10 @@ struct iscsi_context {
 	size_t smalloc_size;
 	int cache_allocations;
 
+    // 下一次重新连接时间
 	time_t next_reconnect;
 	int scsi_timeout;
+    // 旧上下文
 	struct iscsi_context *old_iscsi;
 	int retry_cnt;
 	int no_ua_on_reconnect;
@@ -247,6 +270,7 @@ struct iscsi_pdu {
 
 	uint32_t lun;
 	uint32_t itt;
+    // 命令数
 	uint32_t cmdsn;
 	uint32_t datasn;
 	enum iscsi_opcode response_opcode;
@@ -386,11 +410,15 @@ void iscsi_dump_pdu_header(struct iscsi_context *iscsi, unsigned char *data);
 
 union socket_address;
 
+// 传输方法集
 typedef struct iscsi_transport {
+    // 连接
 	int (*connect)(struct iscsi_context *iscsi, union socket_address *sa, int ai_family);
 	int (*queue_pdu)(struct iscsi_context *iscsi, struct iscsi_pdu *pdu);
 	struct iscsi_pdu* (*new_pdu)(struct iscsi_context *iscsi, size_t size);
+    // 断开连接
 	int (*disconnect)(struct iscsi_context *iscsi);
+    // iscsi_tcp_free_pdu
 	void (*free_pdu)(struct iscsi_context *iscsi, struct iscsi_pdu *pdu);
 	int (*service)(struct iscsi_context *iscsi, int revents);
 	int (*get_fd)(struct iscsi_context *iscsi);

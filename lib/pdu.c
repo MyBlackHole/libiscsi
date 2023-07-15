@@ -773,6 +773,7 @@ iscsi_queue_pdu(struct iscsi_context *iscsi, struct iscsi_pdu *pdu)
 	return iscsi->drv->queue_pdu(iscsi, pdu);
 }
 
+// 取消 pdus
 void
 iscsi_cancel_pdus(struct iscsi_context *iscsi)
 {

@@ -267,6 +267,7 @@ void iscsi_set_reconnect_max_retries(struct iscsi_context *iscsi, int count)
 	iscsi->reconnect_max_retries = count;
 }
 
+// 延迟重新连接
 void iscsi_defer_reconnect(struct iscsi_context *iscsi)
 {
 	iscsi->reconnect_deferred = 1;
@@ -412,6 +413,7 @@ static int reconnect(struct iscsi_context *iscsi, int force)
 		return -1;
 	}
 
+    // 创建 tmp iscsi
 	tmp_iscsi = iscsi_create_context(iscsi->initiator_name);
 	if (tmp_iscsi == NULL) {
 		ISCSI_LOG(iscsi, 2, "failed to create new context for reconnection");
@@ -475,6 +477,7 @@ static int reconnect(struct iscsi_context *iscsi, int force)
 		}
 		memcpy(tmp_iscsi->old_iscsi, iscsi, sizeof(struct iscsi_context));
 	}
+    // 覆盖内存
 	memcpy(iscsi, tmp_iscsi, sizeof(struct iscsi_context));
 	free(tmp_iscsi);
 
@@ -482,6 +485,7 @@ static int reconnect(struct iscsi_context *iscsi, int force)
 	                                iscsi->lun, iscsi_reconnect_cb, NULL);
 }
 
+// iscsi 重连
 int iscsi_reconnect(struct iscsi_context *iscsi)
 {
 	return reconnect(iscsi, 0);

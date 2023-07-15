@@ -78,6 +78,7 @@ static uint32_t iface_rr = 0;
 struct iscsi_transport;
 
 /* MUST keep in sync with iser.c */
+// 公用体
 union socket_address {
 	struct sockaddr_in sin;
 	struct sockaddr_in6 sin6;
@@ -192,6 +193,7 @@ static int set_tcp_user_timeout(struct iscsi_context *iscsi)
 #define TCP_SYNCNT        7
 #endif
 
+// 报文重拾次数
 static int set_tcp_syncnt(struct iscsi_context *iscsi)
 {
 	if (set_tcp_sockopt(iscsi->fd, TCP_SYNCNT, iscsi->tcp_syncnt) != 0) {
@@ -206,6 +208,7 @@ static int iscsi_tcp_connect(struct iscsi_context *iscsi, union socket_address *
 
 	int socksize;
 
+    // 获取 sock 内存大小
 	switch (ai_family) {
 	case AF_INET:
                 socksize = sizeof(struct sockaddr_in);
@@ -218,8 +221,9 @@ static int iscsi_tcp_connect(struct iscsi_context *iscsi, union socket_address *
 				"Only IPv4/IPv6 supported so far.",
 				ai_family);
                 return -1;
-        }
+    }
 
+    // 创建 TCP 流 sock
 	iscsi->fd = socket(ai_family, SOCK_STREAM, 0);
 	if (iscsi->fd == -1) {
 		iscsi_set_error(iscsi, "Failed to open iscsi socket. "
@@ -228,21 +232,28 @@ static int iscsi_tcp_connect(struct iscsi_context *iscsi, union socket_address *
 	}
 
 	if (iscsi->old_iscsi && iscsi->fd != iscsi->old_iscsi->fd) {
+        // 不同的 fd 指向相同的 file 结构
 		if (dup2(iscsi->fd, iscsi->old_iscsi->fd) == -1) {
 			return -1;
 		}
+        // 关闭 fd
 		close(iscsi->fd);
+        // 使用同一个 fd
 		iscsi->fd = iscsi->old_iscsi->fd;
 	}
 
+    // 设置非阻塞
 	iscsi->tcp_nonblocking = !set_nonblocking(iscsi->fd);
 
+    // 连接可用性设置
 	iscsi_set_tcp_keepalive(iscsi, iscsi->tcp_keepidle, iscsi->tcp_keepcnt, iscsi->tcp_keepintvl);
 
+    // 超时设置
 	if (iscsi->tcp_user_timeout > 0) {
 		set_tcp_user_timeout(iscsi);
 	}
 
+    // 报文重试
 	if (iscsi->tcp_syncnt > 0) {
 		set_tcp_syncnt(iscsi);
 	}
@@ -262,6 +273,7 @@ static int iscsi_tcp_connect(struct iscsi_context *iscsi, union socket_address *
 			iface_c++;
 		} while (pchr2);
 
+        // 绑定网络接口: SO_BINDTODEVICE
 		int res = setsockopt(iscsi->fd, SOL_SOCKET, SO_BINDTODEVICE, pchr, strlen(pchr));
 		if (res < 0) {
 			ISCSI_LOG(iscsi,1,"failed to bind to interface '%s': %s",pchr,strerror(errno));
@@ -272,12 +284,14 @@ static int iscsi_tcp_connect(struct iscsi_context *iscsi, union socket_address *
 	}
 #endif
 
+    // TCP_NODELAY : 关闭 Nagle 算法
 	if (set_tcp_sockopt(iscsi->fd, TCP_NODELAY, 1) != 0) {
 		ISCSI_LOG(iscsi,1,"failed to set TCP_NODELAY sockopt: %s",strerror(errno));
 	} else {
 		ISCSI_LOG(iscsi,3,"TCP_NODELAY set to 1");
 	}
 
+    // 连接
 	if (connect(iscsi->fd, &sa->sa, socksize) != 0
 #if defined(_WIN32)
             && WSAGetLastError() != WSAEWOULDBLOCK
@@ -295,6 +309,10 @@ static int iscsi_tcp_connect(struct iscsi_context *iscsi, union socket_address *
 
 
 
+// 异步连接
+/*
+ * portal: 入口\目标地址
+ */
 int
 iscsi_connect_async(struct iscsi_context *iscsi, const char *portal,
 		    iscsi_command_cb cb, void *private_data)
@@ -328,11 +346,13 @@ iscsi_connect_async(struct iscsi_context *iscsi, const char *portal,
 		str[0] = 0;
 	}
 
+    // str=:3260
 	str = strrchr(host, ':');
 	if (str != NULL) {
 		if (strchr(str, ']') == NULL) {
 			if (str != NULL) {
 				port = atoi(str+1);
+                // addr=host=127.0.0.1
 				str[0] = 0;
 			}
 		}
@@ -391,9 +411,12 @@ iscsi_connect_async(struct iscsi_context *iscsi, const char *portal,
 
 	}
 
+    // 设置回调
 	iscsi->socket_status_cb  = cb;
+    // 设置私有数据
 	iscsi->connect_data      = private_data;
 
+    // iscsi_tcp_connect
 	if (iscsi->drv->connect(iscsi, &sa, ai->ai_family) < 0) {
 		iscsi_set_error(iscsi, "Couldn't connect transport: %s",
                                 iscsi_get_error(iscsi));
@@ -401,6 +424,7 @@ iscsi_connect_async(struct iscsi_context *iscsi, const char *portal,
 		return -1;
 	}
 
+    // 释放 ai 内存
 	freeaddrinfo(ai);
 	strncpy(iscsi->connected_portal, portal, MAX_STRING_SIZE);
 	return 0;
@@ -451,6 +475,7 @@ iscsi_tcp_get_fd(struct iscsi_context *iscsi)
 int
 iscsi_get_fd(struct iscsi_context *iscsi)
 {
+    // iscsi_tcp_get_fd
 	return iscsi->drv->get_fd(iscsi);
 }
 
@@ -460,6 +485,7 @@ iscsi_tcp_which_events(struct iscsi_context *iscsi)
 	int events = iscsi->is_connected ? POLLIN : POLLOUT;
 
 	if (iscsi->pending_reconnect && iscsi->old_iscsi &&
+        // 没到下一次重新连接时间
 		time(NULL) < iscsi->next_reconnect) {
 		return 0;
 	}
@@ -475,9 +501,11 @@ iscsi_tcp_which_events(struct iscsi_context *iscsi)
 	return events;
 }
 
+// 判定等待事件
 int
 iscsi_which_events(struct iscsi_context *iscsi)
 {
+    // iscsi_tcp_which_events
 	return iscsi->drv->which_events(iscsi);
 }
 
@@ -611,6 +639,7 @@ iscsi_read_from_socket(struct iscsi_context *iscsi)
 	do {
 		hdr_size = ISCSI_HEADER_SIZE(iscsi->header_digest);
 		if (iscsi->incoming == NULL) {
+            // 分配输入 pdu
 			iscsi->incoming = iscsi_szmalloc(iscsi, sizeof(struct iscsi_in_pdu));
 			if (iscsi->incoming == NULL) {
 				iscsi_set_error(iscsi, "Out-of-memory: failed to malloc iscsi_in_pdu");
@@ -652,7 +681,9 @@ iscsi_read_from_socket(struct iscsi_context *iscsi)
 			break;
 		}
 
+        // 头大小
 		padding_size = iscsi_get_pdu_padding_size(&in->hdr[0]);
+        // 数据大小
 		data_size = iscsi_get_pdu_data_size(&in->hdr[0]) + padding_size;
 
 		if (data_size < 0 || data_size > (ssize_t)iscsi->initiator_max_recv_data_segment_length) {
@@ -911,7 +942,9 @@ iscsi_tcp_service(struct iscsi_context *iscsi, int revents)
 	}
 
 	if (iscsi->pending_reconnect) {
+        // 等待重新连接
 		if (time(NULL) >= iscsi->next_reconnect) {
+            // 大于下次重新连接时间
 			return iscsi_reconnect(iscsi);
 		} else {
 			if (iscsi->old_iscsi) {
@@ -1015,6 +1048,7 @@ check_timeout:
 int
 iscsi_service(struct iscsi_context *iscsi, int revents)
 {
+    // iscsi_tcp_service
 	return iscsi->drv->service(iscsi, revents);
 }
 
@@ -1047,6 +1081,7 @@ void iscsi_set_tcp_syncnt(struct iscsi_context *iscsi, int value)
 	ISCSI_LOG(iscsi, 2, "TCP_SYNCNT will be set to %d on next socket creation",value);
 }
 
+// 设置超时时间
 void iscsi_set_tcp_user_timeout(struct iscsi_context *iscsi, int value)
 {
 	iscsi->tcp_user_timeout=value;
@@ -1071,16 +1106,19 @@ void iscsi_set_tcp_keepintvl(struct iscsi_context *iscsi, int value)
 	ISCSI_LOG(iscsi, 2, "TCP_KEEPINTVL will be set to %d on next socket creation",value);
 }
 
+// 连接属性设置
 int iscsi_set_tcp_keepalive(struct iscsi_context *iscsi, int idle, int count, int interval)
 {
 #ifdef SO_KEEPALIVE
 	int value = 1;
+    // 存活探测间隔
 	if (setsockopt(iscsi->fd, SOL_SOCKET, SO_KEEPALIVE, (char *)&value, sizeof(value)) != 0) {
 		iscsi_set_error(iscsi, "TCP: Failed to set socket option SO_KEEPALIVE. Error %s(%d)", strerror(errno), errno);
 		return -1;
 	}
 	ISCSI_LOG(iscsi, 3, "SO_KEEPALIVE set to %d",value);
 #ifdef TCP_KEEPCNT
+    // 存活探测重拾次数
 	if (set_tcp_sockopt(iscsi->fd, TCP_KEEPCNT, count) != 0) {
 		iscsi_set_error(iscsi, "TCP: Failed to set tcp keepalive count. Error %s(%d)", strerror(errno), errno);
 		return -1;
@@ -1095,6 +1133,7 @@ int iscsi_set_tcp_keepalive(struct iscsi_context *iscsi, int idle, int count, in
 	ISCSI_LOG(iscsi, 3, "TCP_KEEPINTVL set to %d",interval);
 #endif
 #ifdef TCP_KEEPIDLE
+    // 没有数据交互时发送保活间隔
 	if (set_tcp_sockopt(iscsi->fd, TCP_KEEPIDLE, idle) != 0) {
 		iscsi_set_error(iscsi, "TCP: Failed to set tcp keepalive idle. Error %s(%d)", strerror(errno), errno);
 		return -1;
@@ -1137,6 +1176,7 @@ static iscsi_transport iscsi_transport_tcp = {
 	iscsi_tcp_which_events,
 };
 #else
+// TCP_TRANSPORT 类型操作集合
 static iscsi_transport iscsi_transport_tcp = {
 	.connect      = iscsi_tcp_connect,
 	.queue_pdu    = iscsi_tcp_queue_pdu,
@@ -1149,6 +1189,7 @@ static iscsi_transport iscsi_transport_tcp = {
 };
 #endif
 
+// TCP_TRANSPORT 传输类型 操作初始化
 void iscsi_init_tcp_transport(struct iscsi_context *iscsi)
 {
 	iscsi->drv = &iscsi_transport_tcp;

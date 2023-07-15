@@ -53,3 +53,5 @@ TAGS
 /libiscsi.pc
 /.cproject
 /.project
+.cache
+iscsi-pr

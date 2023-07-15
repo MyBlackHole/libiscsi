@@ -48,14 +48,16 @@
 
 /**
  * Initialize transport type of session
+ *
+ * 初始化会话类型网络操作集合
  */
-
 int iscsi_init_transport(struct iscsi_context *iscsi,
 			 enum iscsi_transport_type transport) {
 	iscsi->transport = transport;
 
 	switch (iscsi->transport) {
 	case TCP_TRANSPORT:
+        // 传输集合设置
 		iscsi_init_tcp_transport(iscsi);
 		break;
 #ifdef HAVE_LINUX_ISER
@@ -166,6 +168,7 @@ iscsi_srand_init(struct iscsi_context *iscsi) {
 		return;
 	}
 
+    // 获取线程互斥锁
 	err = pthread_mutex_lock(&rd_mutex);
 	assert(err == 0);
 
@@ -174,17 +177,21 @@ iscsi_srand_init(struct iscsi_context *iscsi) {
 		goto out;
 	}
 
+    // 打开随即设备
 	urand_fd = open("/dev/urandom", O_RDONLY);
 	if (urand_fd == -1) {
 		goto fallback;
 	}
 
+    // 读取随机数
 	rc = read(urand_fd, &seed, sizeof(seed));
+    // 关闭 fd
 	close(urand_fd);
 	if (rc == -1) {
 		goto fallback;
 	}
 
+    // 初始化随机种子
 	srand(seed);
 	goto out;
 
@@ -194,6 +201,7 @@ fallback:
 
 out:
 	rd_set = true;
+    // 释放锁
 	err = pthread_mutex_unlock(&rd_mutex);
 	assert(err == 0);
 }
@@ -202,18 +210,22 @@ struct iscsi_context *
 iscsi_create_context(const char *initiator_name)
 {
 	struct iscsi_context *iscsi;
+    // 必须
 	size_t required = ISCSI_RAW_HEADER_SIZE + ISCSI_DIGEST_SIZE;
 	char *ca;
 
+    // 判定
 	if (!initiator_name[0]) {
 		return NULL;
 	}
 
+    // 分配空间
 	iscsi = malloc(sizeof(struct iscsi_context));
 	if (iscsi == NULL) {
 		return NULL;
 	}
 
+    // 初始化内存
 	memset(iscsi, 0, sizeof(struct iscsi_context));
 
 	/* initalize transport of context */
@@ -222,12 +234,15 @@ iscsi_create_context(const char *initiator_name)
 		return NULL;
 	}
 
+    // 设置上下文发起名
 	strncpy(iscsi->initiator_name,initiator_name,MAX_STRING_SIZE);
 
 	iscsi->fd = -1;
 
 	/* initialize to a "random" isid */
+    // 随机环境初始化
 	iscsi_srand_init(iscsi);
+
 	iscsi_set_isid_random(iscsi, rand(), 0);
 
 	/* assume we start in security negotiation phase */
@@ -245,8 +260,10 @@ iscsi_create_context(const char *initiator_name)
 	iscsi->use_immediate_data                     = ISCSI_IMMEDIATE_DATA_YES;
 	iscsi->want_header_digest                     = ISCSI_HEADER_DIGEST_NONE_CRC32C;
 
+    // tcp 保持
 	iscsi->tcp_keepcnt=3;
 	iscsi->tcp_keepintvl=30;
+    // tcp 空闲
 	iscsi->tcp_keepidle=30;
 	
 	iscsi->reconnect_max_retries = -1;
@@ -296,6 +313,7 @@ iscsi_create_context(const char *initiator_name)
 	ISCSI_LOG(iscsi, 5, "small allocation size is %u byte",
                   (uint32_t)iscsi->smalloc_size);
 
+    // 获取是否开启缓存分配
 	ca = getenv("LIBISCSI_CACHE_ALLOCATIONS");
 	if (!ca || atoi(ca) != 0) {
 		iscsi->cache_allocations = 1;
@@ -770,6 +788,7 @@ iscsi_destroy_url(struct iscsi_url *iscsi_url)
 }
 
 
+// 设置用户名、密码
 int
 iscsi_set_initiator_username_pwd(struct iscsi_context *iscsi,
 						    const char *user, const char *passwd)
@@ -785,6 +804,7 @@ iscsi_set_initiator_username_pwd(struct iscsi_context *iscsi,
 }
 
 
+// 设置目标用户名、密码
 int
 iscsi_set_target_username_pwd(struct iscsi_context *iscsi,
 			      const char *user, const char *passwd)

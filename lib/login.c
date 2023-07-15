@@ -1443,6 +1443,7 @@ struct iscsi_in_pdu *in)
 	return 0;
 }
 
+// 设置会话类型
 int
 iscsi_set_session_type(struct iscsi_context *iscsi,
 		       enum iscsi_session_type session_type)
