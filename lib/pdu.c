@@ -421,6 +421,7 @@ static void iscsi_process_pdu_serials(struct iscsi_context *iscsi, struct iscsi_
 	}
 }
 
+// pdu code 类型处理
 int
 iscsi_process_pdu(struct iscsi_context *iscsi, struct iscsi_in_pdu *in)
 {
@@ -770,6 +771,7 @@ iscsi_timeout_scan(struct iscsi_context *iscsi)
 int
 iscsi_queue_pdu(struct iscsi_context *iscsi, struct iscsi_pdu *pdu)
 {
+    // iscsi_tcp_queue_pdu
 	return iscsi->drv->queue_pdu(iscsi, pdu);
 }
 

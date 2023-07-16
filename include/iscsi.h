@@ -321,6 +321,7 @@ EXTERN int iscsi_set_session_type(struct iscsi_context *iscsi,
  * Types of header digest we support. Default is NONE
  */
 enum iscsi_header_digest {
+    // 没有头摘要
 	ISCSI_HEADER_DIGEST_NONE        = 0,
 	ISCSI_HEADER_DIGEST_NONE_CRC32C = 1,
 	ISCSI_HEADER_DIGEST_CRC32C_NONE = 2,

@@ -82,12 +82,14 @@ void iscsi_set_cache_allocations(struct iscsi_context *iscsi, int ca)
 	iscsi->cache_allocations = ca;
 }
 
+// 分配内存
 void* iscsi_malloc(struct iscsi_context *iscsi, size_t size) {
 	void * ptr = malloc(size);
 	if (ptr != NULL) iscsi->mallocs++;
 	return ptr;
 }
 
+// 分配内存,初始化
 void* iscsi_zmalloc(struct iscsi_context *iscsi, size_t size) {
 	void * ptr = malloc(size);
 	if (ptr != NULL) {
@@ -117,6 +119,7 @@ char* iscsi_strdup(struct iscsi_context *iscsi, const char* str) {
 	return str2;
 }
 
+// 分配
 void* iscsi_smalloc(struct iscsi_context *iscsi, size_t size) {
 	void *ptr;
 	if (size > iscsi->smalloc_size) return NULL;
@@ -129,6 +132,7 @@ void* iscsi_smalloc(struct iscsi_context *iscsi, size_t size) {
 	return ptr;
 }
 
+// 分配、初始化
 void* iscsi_szmalloc(struct iscsi_context *iscsi, size_t size) {
 	void *ptr = iscsi_smalloc(iscsi, size);
 	if (ptr) {

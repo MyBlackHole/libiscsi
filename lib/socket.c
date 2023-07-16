@@ -705,6 +705,7 @@ iscsi_read_from_socket(struct iscsi_context *iscsi)
 			} else {
 				if (iovector_in == NULL) {
 					if (in->data == NULL) {
+                        // 分配数据存储空间
 						in->data = iscsi_malloc(iscsi, data_size);
 						if (in->data == NULL) {
 							iscsi_set_error(iscsi, "Out-of-memory: failed to malloc iscsi_in_pdu->data(%d)", (int)data_size);
@@ -713,6 +714,7 @@ iscsi_read_from_socket(struct iscsi_context *iscsi)
 					}
 					buf = &in->data[in->data_pos];
 				}
+                // 读取数据
 				count = recv(iscsi->fd, (void *)buf, count, 0);
 			}
 			if (count == 0) {
@@ -1060,6 +1062,7 @@ static int iscsi_tcp_queue_pdu(struct iscsi_context *iscsi,
 		return -1;
 	}
 
+    // 添加到输出队列
 	iscsi_add_to_outqueue(iscsi, pdu);
 
 	return 0;

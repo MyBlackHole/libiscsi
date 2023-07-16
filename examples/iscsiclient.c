@@ -669,6 +669,7 @@ int main(int argc, char *argv[])
         // 设置预期事件
 		pfd.events = iscsi_which_events(iscsi);
 
+        // 等待事件发生
 		if (poll(&pfd, 1, -1) < 0) {
 			printf("Poll failed");
 			exit(10);

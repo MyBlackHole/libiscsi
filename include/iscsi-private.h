@@ -178,9 +178,12 @@ struct iscsi_context {
 	int log_level;
 	iscsi_log_fn log_fn;
 
+    // 分配记录
 	int mallocs;
+    // 重新分配
 	int reallocs;
 	int frees;
+    // 分配计数
 	int smallocs;
 	void* smalloc_ptrs[SMALL_ALLOC_MAX_FREE];
 	int smalloc_free;
@@ -238,9 +241,11 @@ enum iscsi_opcode {
 	ISCSI_PDU_NOP_IN                         = 0x20,
 	ISCSI_PDU_SCSI_RESPONSE                  = 0x21,
 	ISCSI_PDU_SCSI_TASK_MANAGEMENT_RESPONSE  = 0x22,
+    // 登陆响应
 	ISCSI_PDU_LOGIN_RESPONSE                 = 0x23,
 	ISCSI_PDU_TEXT_RESPONSE                  = 0x24,
 	ISCSI_PDU_DATA_IN                        = 0x25,
+    // 注销\退出登陆
 	ISCSI_PDU_LOGOUT_RESPONSE                = 0x26,
 	ISCSI_PDU_R2T                            = 0x31,
 	ISCSI_PDU_ASYNC_MSG                      = 0x32,
